@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="card">
+  <h3>v3 — Google reCAPTCHA (Score)</h3>
+  <p style="color:#9ca3af">action/hostname/score를 모두 확인. 기준 미달 시 v2로 폴백.</p>
+
+  <script src="https://www.google.com/recaptcha/api.js?render={{ site_key }}" async defer></script>
+
+  <form id="v3f" method="post" action="/v3">
+    <input name="nickname" placeholder="닉네임" style="padding:8px;border-radius:8px;border:1px solid #1f2a44;background:#0b1120;color:#e5e7eb">
+    <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
+    <input type="hidden" name="recaptcha-action" id="recaptcha-action" value="signup">
+    <button type="button" class="btn" onclick="runV3()">제출</button>
+  </form>
+
+  <script>
+    function runV3(){
+      const action = document.getElementById('recaptcha-action').value;
+      grecaptcha.ready(function(){
+        grecaptcha.execute('{{ site_key }}', {action}).then(function(token){
+          document.getElementById('g-recaptcha-response').value = token;
+          document.getElementById('v3f').submit();
+        });
+      });
+    }
+  </script>
+</div>
+{% endblock %}

@@ -1,0 +1,9 @@
+services:
+  web:
+    build: .
+    env_file:
+      - .env        # 컨테이너에 주입
+    environment:
+      FLASK_APP: app:create_app
+    ports:
+      - "5000:5000"
