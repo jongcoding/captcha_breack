@@ -160,7 +160,7 @@ def create_app():
         
         if not ok:
             # 안전한 폴백: 점수/action/hostname 불일치 시 v2로 유도
-            flash(f"[v3] score/action/host 조건 미충족 → v2로 이동: {payload}", "warn")
+            flash(f"[slide-captcha] 퍼즐을 맞춰서 증명하세요.: {payload}", "warn")
             return redirect(url_for("v2_form"))
         flash("[v3] reCAPTCHA(v3) 통과", "ok")
         return redirect(url_for("v3_form"))
