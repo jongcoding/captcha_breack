@@ -1,28 +1,71 @@
 {% extends "base.html" %}
 {% block content %}
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>GeeTest Slide CAPTCHA (Flask Demo)</title>
+<!-- V4 클라이언트 스크립트 -->
+<!-- head에 넣기 -->
+  <script src="https://static.geetest.com/v4/gt4.js"></script>
+
+  <script>
+  // Flask가 주입해 준 값
+  const CAPTCHA_ID = "{{ captcha_id }}";
+  </script>
+
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+  const statusEl = document.getElementById("status") || {textContent:""};
+  const set = (s)=> statusEl.textContent = "상태: " + s;
+
+  console.log("CAPTCHA_ID =", CAPTCHA_ID);
+  if (!CAPTCHA_ID) { set("CAPTCHA_ID 없음(서버 미설정)"); return; }
+  if (typeof initGeetest4 !== "function") { set("gt4.js 미로드"); return; }
+
+  initGeetest4(
+      { captchaId: CAPTCHA_ID, product: "popup" },   // ← bind 대신 popup
+      function (gt) {
+      window._gt = gt;
+      gt.onReady(()=>{ console.log("onReady"); set("준비됨 → 팝업 표시"); });
+      gt.onError(e=>{ console.error("onError", e); set("에러"); });
+      gt.onClose(()=>{ console.warn("onClose"); set("사용자 닫음"); });
+      gt.onSuccess(()=>{
+          const v = gt.getValidate();
+          console.log("onSuccess", v);
+          set("클라이언트 통과");
+      });
+
+      // 눈으로 확인: 바로 표시
+      if (typeof gt.show === "function") gt.show();
+
+      // 화면에도 꽂아두기
+      gt.appendTo("#captcha-container");
+      }
+  );
+  });
+  </script>
+
+<style>
+  body{font-family:system-ui,"Noto Sans KR",sans-serif;background:#0b1020;color:#e8eef7;margin:0}
+  .wrap{max-width:720px;margin:40px auto;padding:0 16px}
+  .card{background:#101936;border:1px solid #253056;border-radius:16px;padding:16px}
+  button{background:#1a2449;color:#e8eef7;border:1px solid #2a355f;border-radius:10px;padding:10px 14px;cursor:pointer}
+  button:hover{background:#223060}
+  .row{display:flex;gap:10px;align-items:center}
+  #captcha-container{margin:16px 0}
+  #result{white-space:pre-wrap;font-size:13px;color:#cfe2ff}
+</style>
+<body>
+
+<script>
+  const CAPTCHA_ID = "{{ captcha_id }}";  // Flask가 주입
+</script>
+<script src="/static/main.js" defer></script>
+</body>
+
 <div class="card">
   <h3>v3 — Google reCAPTCHA (Score)</h3>
   <p style="color:#9ca3af">action/hostname/score를 모두 확인. 기준 미달 시 v2로 폴백.</p>
 
-  <script src="https://www.google.com/recaptcha/api.js?render={{ site_key }}" async defer></script>
-
-  <form id="v3f" method="post" action="/v3">
-    <input name="nickname" placeholder="닉네임" style="padding:8px;border-radius:8px;border:1px solid #1f2a44;background:#0b1120;color:#e5e7eb">
-    <input type="hidden" name="g-recaptcha-response" id="g-recaptcha-response">
-    <input type="hidden" name="recaptcha-action" id="recaptcha-action" value="signup">
-    <button type="button" class="btn" onclick="runV3()">제출</button>
-  </form>
-
-  <script>
-    function runV3(){
-      const action = document.getElementById('recaptcha-action').value;
-      grecaptcha.ready(function(){
-        grecaptcha.execute('{{ site_key }}', {action}).then(function(token){
-          document.getElementById('g-recaptcha-response').value = token;
-          document.getElementById('v3f').submit();
-        });
-      });
-    }
-  </script>
+  <div id="captcha-container"></div>
 </div>
 {% endblock %}
