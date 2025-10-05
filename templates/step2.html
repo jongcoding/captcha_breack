@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <title>STEP2: GeeTest + Reverse Math</title>
+  <script src="https://static.geetest.com/v4/gt4.js"></script>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:900px;margin:40px auto}
+    .grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+    .card{border:1px solid #ddd;border-radius:12px;padding:16px}
+    .problem{font-size:22px;font-weight:800;margin:12px 0}
+    input,button{padding:10px 12px;border-radius:10px;border:1px solid #ccc}
+    button{cursor:pointer}
+    .muted{opacity:.7}
+    .count{font-feature-settings:"tnum";font-variant-numeric:tabular-nums}
+  </style>
+</head>
+<body>
+  <h1>STEP2: GeeTest 슬라이드 + 빠른 수학</h1>
+  <div class="grid">
+    <div class="card">
+      <div>남은 시간: <span id="remain" class="count">-</span> ms</div>
+      <div class="problem" id="prob">{{ problem }}</div>
+      <div>
+        <input id="ans" type="number" placeholder="정답 입력"/>
+        <button id="submit">제출</button>
+        <span id="status"></span>
+      </div>
+      <div class="muted" style="margin-top:8px">캡챠를 풀 때까지 계속 수학 문제가 나오며, 늦으면 즉시 종료됩니다.</div>
+    </div>
+    <div class="card">
+      <h3>GeeTest</h3>
+      <div id="gt"></div>
+      <button id="resetGt">슬라이드 리셋</button>
+      <div class="muted">※ 언제든 1회 성공하면 최종 성공</div>
+    </div>
+  </div>
+
+  <script>
+    const remainEl = document.getElementById('remain');
+    const statusEl = document.getElementById('status');
+    const probEl = document.getElementById('prob');
+    const ansEl = document.getElementById('ans');
+
+    let polling = true;
+    async function poll(){
+      if(!polling) return;
+      try{
+        const r = await fetch("/api/step2/status");
+        const data = await r.json();
+        if(!data.ok){
+          alert("세션 종료: " + (data.reason||"unknown"));
+          window.location.href="/";
+          return;
+        }
+        remainEl.textContent = Math.max(0, data.remaining_ms|0);
+        if(data.captcha_done){
+          polling = false;
+          window.location.href = "/success";
+          return;
+        }
+      }catch(e){}
+      setTimeout(poll, 150);
+    }
+    poll();
+
+    document.getElementById('submit').addEventListener('click', async ()=>{
+      const v = (ansEl.value||"").trim();
+      if(!v){ statusEl.textContent = "정답을 입력하세요"; return; }
+      statusEl.textContent = "검증 중...";
+      try{
+        const r = await fetch("/api/step2/answer", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({answer: v})
+        });
+        const data = await r.json();
+        if(!data.ok){
+          alert("세션 종료: " + (data.reason||"unknown"));
+          window.location.href="/";
+          return;
+        }
+        probEl.textContent = data.problem;
+        ansEl.value = "";
+        statusEl.textContent = "통과!";
+      }catch(e){
+        statusEl.textContent = "에러: " + e;
+      }
+    });
+
+    (function(){
+      window.initGeetest4({
+        captchaId: "{{ gt_id }}",
+        product: 'float',
+        riskType: 'slide'
+      }, function(obj){
+        window._gt = obj;
+        obj.appendTo('#gt');
+        obj.onSuccess(async function(){
+          const v = obj.getValidate();
+          statusEl.textContent = "검증 중...";
+          try{
+            const r = await fetch("/api/step2/verify-slide", {
+              method:"POST",
+              headers:{"Content-Type":"application/json"},
+              body: JSON.stringify(v)
+            });
+            const data = await r.json();
+            if(!data.ok){ statusEl.textContent = "실패: " + (data.reason||"unknown"); return; }
+            statusEl.textContent = "GeeTest 성공!";
+            // 성공은 poll 루프가 /success 로 보냄
+          }catch(e){ statusEl.textContent = "에러: " + e; }
+        });
+      });
+    })();
+
+    document.getElementById('resetGt').addEventListener('click', ()=>{
+      if(window._gt) window._gt.reset();
+    });
+  </script>
+</body>
+</html>

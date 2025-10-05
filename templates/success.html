@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <title>Success</title>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:720px;margin:40px auto}
+    .card{border:1px solid #ddd;border-radius:12px;padding:16px}
+    code{padding:2px 6px;border:1px solid #eee;border-radius:6px}
+  </style>
+</head>
+<body>
+  <h1>성공!</h1>
+  <div class="card">
+    <p>FLAG: <code>{{ flag }}</code></p>
+  </div>
+  <p><a href="{{ url_for('home') }}">다시 시작</a></p>
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <title>STEP1: reCAPTCHA + Reverse Math</title>
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:900px;margin:40px auto}
+    .grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
+    .card{border:1px solid #ddd;border-radius:12px;padding:16px}
+    .problem{font-size:22px;font-weight:800;margin:12px 0}
+    input,button{padding:10px 12px;border-radius:10px;border:1px solid #ccc}
+    button{cursor:pointer}
+    .muted{opacity:.7}
+    .count{font-feature-settings:"tnum";font-variant-numeric:tabular-nums}
+  </style>
+</head>
+<body>
+  <h1>STEP1: reCAPTCHA v2 + 빠른 수학</h1>
+  <div class="grid">
+    <div class="card">
+      <div>남은 시간: <span id="remain" class="count">-</span> ms</div>
+      <div class="problem" id="prob">{{ problem }}</div>
+      <div>
+        <input id="ans" type="number" placeholder="정답 입력"/>
+        <button id="submit">제출</button>
+        <span id="status"></span>
+      </div>
+      <div class="muted" style="margin-top:8px">캡챠를 풀 때까지 계속 수학 문제가 나오며, 늦으면 즉시 종료됩니다.</div>
+      <div style="margin-top:12px">
+        <button id="next" disabled>STEP2로 이동</button>
+      </div>
+    </div>
+    <div class="card">
+      <h3>reCAPTCHA v2</h3>
+      <div class="g-recaptcha" data-sitekey="{{ rc_key }}" data-callback="onRc"></div>
+      <div class="muted">※ 언제든 1회 성공하면 STEP1 종료</div>
+      <button id="resetRc">리셋</button>
+    </div>
+  </div>
+
+  <script>
+    const remainEl = document.getElementById('remain');
+    const statusEl = document.getElementById('status');
+    const probEl = document.getElementById('prob');
+    const ansEl = document.getElementById('ans');
+    const nextBtn = document.getElementById('next');
+
+    let polling = true;
+
+    async function poll() {
+      if(!polling) return;
+      try{
+        const r = await fetch("/api/step1/status");
+        const data = await r.json();
+        if(!data.ok){
+          alert("세션 종료: " + (data.reason||"unknown"));
+          window.location.href="/";
+          return;
+        }
+        remainEl.textContent = Math.max(0, data.remaining_ms|0);
+        if(data.captcha_done){
+          polling = false;
+          nextBtn.disabled = false;
+          statusEl.textContent = "reCAPTCHA 완료! STEP2로 이동하세요.";
+        }
+      }catch(e){}
+      setTimeout(poll, 150);
+    }
+    poll();
+
+    document.getElementById('submit').addEventListener('click', async ()=>{
+      const v = (ansEl.value||"").trim();
+      if(!v){ statusEl.textContent = "정답을 입력하세요"; return; }
+      statusEl.textContent = "검증 중...";
+      try{
+        const r = await fetch("/api/step1/answer", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({answer: v})
+        });
+        const data = await r.json();
+        if(!data.ok){
+          alert("세션 종료: " + (data.reason||"unknown"));
+          window.location.href="/";
+          return;
+        }
+        probEl.textContent = data.problem;
+        ansEl.value = "";
+        statusEl.textContent = "통과!";
+      }catch(e){
+        statusEl.textContent = "에러: "+e;
+      }
+    });
+
+    window.onRc = async function(token){
+      statusEl.textContent = "reCAPTCHA 검증 중...";
+      try{
+        const r = await fetch("/api/step1/verify-recaptcha", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({recaptcha_token: token})
+        });
+        const data = await r.json();
+        if(!data.ok){ statusEl.textContent = "실패: "+(data.reason||""); return; }
+        statusEl.textContent = "reCAPTCHA 성공!";
+        if(window.grecaptcha){ try{ grecaptcha.reset(); }catch(e){} }
+      }catch(e){ statusEl.textContent = "에러: "+e; }
+    }
+
+    document.getElementById('resetRc').addEventListener('click', ()=>{
+      if(window.grecaptcha){ try{ grecaptcha.reset(); }catch(e){} }
+    });
+
+    document.getElementById('next').addEventListener('click', ()=>{
+      window.location.href="/step2";
+    });
+  </script>
+</body>
+</html>

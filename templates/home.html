@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <title>Double CAPTCHA + Reverse-Math</title>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:820px;margin:40px auto}
+    a.btn{display:inline-block;padding:12px 16px;border:1px solid #ddd;border-radius:12px;text-decoration:none}
+  </style>
+</head>
+<body>
+  <h1>규칙</h1>
+  <ul>
+    <li>수학 문제는 캡챠를 풀 때까지 <b>계속</b> 제공됩니다.</li>
+    <li>각 문제는 <b>{{ ms }}ms</b> 내에 정답 제출해야 합니다. 늦거나 오답이면 즉시 종료됩니다.</li>
+    <li>캡챠(reCAPTCHA → GeeTest)는 언제든 1회 성공하면 해당 단계가 종료됩니다.</li>
+  </ul>
+  <a class="btn" href="{{ url_for('step1') }}">시작하기 (STEP1)</a>
+</body>
+</html>
