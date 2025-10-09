@@ -57,6 +57,12 @@ S1_TO_S2_MAX_MS = int(os.getenv("S1_TO_S2_MAX_MS", "60000"))
 def create_app():
     app = Flask(__name__)
     app.secret_key = SECRET_KEY
+    app.config.update(
+        SESSION_COOKIE_SECURE=False,
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE='Lax',
+        SESSION_COOKIE_NAME='session',
+    )
     sessions = {}
 
     def now_ms() -> int:
@@ -358,6 +364,7 @@ def create_app():
     @app.post("/api/handshake/new")
     def hs_new():
         sid = session.get("sid")
+        print(f"[hs_new] sid={sid}, session_keys={list(session.keys())}, cookies={request.cookies}")
         if not sid or sid not in sessions:
             return jsonify({"ok": False, "reason": "session_expired"}), 401
         seed = secrets.token_bytes(16)
