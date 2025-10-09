@@ -16,7 +16,7 @@ RECAPTCHA_ENTERPRISE_API_KEY    = os.getenv("RECAPTCHA_ENTERPRISE_API_KEY", "")
 RECAPTCHA_ENTERPRISE_PROJECT_ID = os.getenv("RECAPTCHA_ENTERPRISE_PROJECT_ID", "")
 
 FLAG = os.getenv("FLAG", "MSG{FAKE_FLAG}")
-SECRET_KEY = os.getenv("SECRET_KEY", "dev-secret")
+SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_hex(32))
 
 MAX_RESPONSE_TIME_MS = int(os.getenv("MAX_RESPONSE_TIME_MS", "60000"))
 
