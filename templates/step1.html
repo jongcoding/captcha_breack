@@ -1,120 +1,50 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8"/>
-  <title>STEP1: reCAPTCHA + Reverse Math</title>
+  <meta charset="utf-8" />
+  <title>STEP 1</title>
+  <!-- reCAPTCHA v2 체크박스용 (레거시) -->
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+  <!-- reCAPTCHA Enterprise v3 토큰용 -->
+  <script src="https://www.google.com/recaptcha/enterprise.js?render={{ v3_key }}"></script>
   <style>
-    body{font-family:system-ui,sans-serif;max-width:900px;margin:40px auto}
-    .grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
-    .card{border:1px solid #ddd;border-radius:12px;padding:16px}
-    .problem{font-size:22px;font-weight:800;margin:12px 0}
-    input,button{padding:10px 12px;border-radius:10px;border:1px solid #ccc}
-    button{cursor:pointer}
-    .muted{opacity:.7}
-    .count{font-feature-settings:"tnum";font-variant-numeric:tabular-nums}
+    .box { max-width: 520px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; }
   </style>
 </head>
 <body>
-  <h1>STEP1: reCAPTCHA v2 + 빠른 수학</h1>
-  <div class="grid">
-    <div class="card">
-      <div>남은 시간: <span id="remain" class="count">-</span> ms</div>
-      <div class="problem" id="prob">{{ problem }}</div>
-      <div>
-        <input id="ans" type="number" placeholder="정답 입력"/>
-        <button id="submit">제출</button>
-        <span id="status"></span>
-      </div>
-      <div class="muted" style="margin-top:8px">캡챠를 풀 때까지 계속 수학 문제가 나오며, 늦으면 즉시 종료됩니다.</div>
-      <div style="margin-top:12px">
-        <button id="next" disabled>STEP2로 이동</button>
-      </div>
-    </div>
-    <div class="card">
-      <h3>reCAPTCHA v2</h3>
-      <div class="g-recaptcha" data-sitekey="{{ rc_key }}" data-callback="onRc"></div>
-      <div class="muted">※ 언제든 1회 성공하면 STEP1 종료</div>
-      <button id="resetRc">리셋</button>
-    </div>
+  <div class="box">
+    <h2>STEP 1 (v2 + Enterprise v3)</h2>
+    <p>아래 v2 체크박스를 통과한 후, 서버는 동시에 v3(Enterprise) 점수도 평가합니다.</p>
+
+    <!-- v2 -->
+    <div class="g-recaptcha" data-sitekey="{{ rc_key }}"></div>
+
+    <!-- v3 token이 자동 주입될 히든 필드 -->
+    <input type="hidden" id="v3_token_s1" value="" />
+
+    <p style="margin-top:16px;">
+      <em>v3 토큰은 페이지 로드 후 자동 발급됩니다.</em>
+    </p>
+
+    <script>
+      // Enterprise v3: action='s1'
+      grecaptcha.enterprise.ready(function() {
+        grecaptcha.enterprise.execute('{{ v3_key }}', {action: 's1'}).then(function(token) {
+          document.getElementById('v3_token_s1').value = token;
+          console.log('[v3 s1] token acquired');
+        }).catch(function(e){
+          console.warn('v3 s1 token error:', e);
+        });
+      });
+    </script>
+
+    <p style="margin-top:24px;">
+      이제 클라이언트(자동화/프록시)에서
+      <code>/api/step1/begin</code> → <code>/api/step1/verify-recaptcha</code> 로
+      <strong>v2 토큰(g-recaptcha-response) + v3 토큰(#v3_token_s1.value)</strong>을 함께 제출하세요.
+    </p>
+
+    <p><a href="{{ url_for('step2') }}">STEP 2로 이동</a></p>
   </div>
-
-  <script>
-    const remainEl = document.getElementById('remain');
-    const statusEl = document.getElementById('status');
-    const probEl = document.getElementById('prob');
-    const ansEl = document.getElementById('ans');
-    const nextBtn = document.getElementById('next');
-
-    let polling = true;
-
-    async function poll() {
-      if(!polling) return;
-      try{
-        const r = await fetch("/api/step1/status");
-        const data = await r.json();
-        if(!data.ok){
-          alert("세션 종료: " + (data.reason||"unknown"));
-          window.location.href="/";
-          return;
-        }
-        remainEl.textContent = Math.max(0, data.remaining_ms|0);
-        if(data.captcha_done){
-          polling = false;
-          nextBtn.disabled = false;
-          statusEl.textContent = "reCAPTCHA 완료! STEP2로 이동하세요.";
-        }
-      }catch(e){}
-      setTimeout(poll, 150);
-    }
-    poll();
-
-    document.getElementById('submit').addEventListener('click', async ()=>{
-      const v = (ansEl.value||"").trim();
-      if(!v){ statusEl.textContent = "정답을 입력하세요"; return; }
-      statusEl.textContent = "검증 중...";
-      try{
-        const r = await fetch("/api/step1/answer", {
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({answer: v})
-        });
-        const data = await r.json();
-        if(!data.ok){
-          alert("세션 종료: " + (data.reason||"unknown"));
-          window.location.href="/";
-          return;
-        }
-        probEl.textContent = data.problem;
-        ansEl.value = "";
-        statusEl.textContent = "통과!";
-      }catch(e){
-        statusEl.textContent = "에러: "+e;
-      }
-    });
-
-    window.onRc = async function(token){
-      statusEl.textContent = "reCAPTCHA 검증 중...";
-      try{
-        const r = await fetch("/api/step1/verify-recaptcha", {
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({recaptcha_token: token})
-        });
-        const data = await r.json();
-        if(!data.ok){ statusEl.textContent = "실패: "+(data.reason||""); return; }
-        statusEl.textContent = "reCAPTCHA 성공!";
-        if(window.grecaptcha){ try{ grecaptcha.reset(); }catch(e){} }
-      }catch(e){ statusEl.textContent = "에러: "+e; }
-    }
-
-    document.getElementById('resetRc').addEventListener('click', ()=>{
-      if(window.grecaptcha){ try{ grecaptcha.reset(); }catch(e){} }
-    });
-
-    document.getElementById('next').addEventListener('click', ()=>{
-      window.location.href="/step2";
-    });
-  </script>
 </body>
 </html>

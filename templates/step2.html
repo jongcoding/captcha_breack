@@ -1,122 +1,83 @@
 <!doctype html>
 <html lang="ko">
 <head>
-  <meta charset="utf-8"/>
-  <title>STEP2: GeeTest + Reverse Math</title>
+  <meta charset="utf-8" />
+  <title>STEP 2</title>
+  <!-- Enterprise v3 -->
+  <script src="https://www.google.com/recaptcha/enterprise.js?render={{ v3_key }}"></script>
+  <!-- GeeTest v4 -->
   <script src="https://static.geetest.com/v4/gt4.js"></script>
   <style>
-    body{font-family:system-ui,sans-serif;max-width:900px;margin:40px auto}
-    .grid{display:grid;grid-template-columns:2fr 1fr;gap:16px}
-    .card{border:1px solid #ddd;border-radius:12px;padding:16px}
-    .problem{font-size:22px;font-weight:800;margin:12px 0}
-    input,button{padding:10px 12px;border-radius:10px;border:1px solid #ccc}
-    button{cursor:pointer}
-    .muted{opacity:.7}
-    .count{font-feature-settings:"tnum";font-variant-numeric:tabular-nums}
+    .box { max-width: 520px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; }
+    .muted { color: #666; }
   </style>
 </head>
 <body>
-  <h1>STEP2: GeeTest 슬라이드 + 빠른 수학</h1>
-  <div class="grid">
-    <div class="card">
-      <div>남은 시간: <span id="remain" class="count">-</span> ms</div>
-      <div class="problem" id="prob">{{ problem }}</div>
-      <div>
-        <input id="ans" type="number" placeholder="정답 입력"/>
-        <button id="submit">제출</button>
-        <span id="status"></span>
-      </div>
-      <div class="muted" style="margin-top:8px">캡챠를 풀 때까지 계속 수학 문제가 나오며, 늦으면 즉시 종료됩니다.</div>
-    </div>
-    <div class="card">
-      <h3>GeeTest</h3>
-      <div id="gt"></div>
-      <button id="resetGt">슬라이드 리셋</button>
-      <div class="muted">※ 언제든 1회 성공하면 최종 성공</div>
-    </div>
-  </div>
+  <div class="box">
+    <h2>STEP 2 (GeeTest + Enterprise v3)</h2>
 
-  <script>
-    const remainEl = document.getElementById('remain');
-    const statusEl = document.getElementById('status');
-    const probEl = document.getElementById('prob');
-    const ansEl = document.getElementById('ans');
+    <!-- GeeTest 슬라이드 캡챠 위젯 -->
+    <div id="geetest-captcha"></div>
+    <p class="muted">위 슬라이더를 통과하세요. 자동화 클라이언트는 완료 후 hidden 인풋에서 값을 읽어
+      <code>/api/step2/verify-slide</code>로 전송합니다.</p>
 
-    let polling = true;
-    async function poll(){
-      if(!polling) return;
-      try{
-        const r = await fetch("/api/step2/status");
-        const data = await r.json();
-        if(!data.ok){
-          alert("세션 종료: " + (data.reason||"unknown"));
-          window.location.href="/";
-          return;
-        }
-        remainEl.textContent = Math.max(0, data.remaining_ms|0);
-        if(data.captcha_done){
-          polling = false;
-          window.location.href = "/success";
-          return;
-        }
-      }catch(e){}
-      setTimeout(poll, 150);
-    }
-    poll();
+    <!-- GeeTest 결과값을 담을 hidden fields -->
+    <input type="hidden" id="lot_number" value="" />
+    <input type="hidden" id="captcha_output" value="" />
+    <input type="hidden" id="pass_token" value="" />
+    <input type="hidden" id="gen_time" value="" />
 
-    document.getElementById('submit').addEventListener('click', async ()=>{
-      const v = (ansEl.value||"").trim();
-      if(!v){ statusEl.textContent = "정답을 입력하세요"; return; }
-      statusEl.textContent = "검증 중...";
-      try{
-        const r = await fetch("/api/step2/answer", {
-          method:"POST",
-          headers:{"Content-Type":"application/json"},
-          body: JSON.stringify({answer: v})
+    <!-- v3 token hidden -->
+    <input type="hidden" id="v3_token_s2" value="" />
+
+    <script>
+      // 디버깅: CAPTCHA_ID 확인
+      console.log('[GeeTest] Captcha ID:', '{{ gt_id }}');
+
+      // GeeTest v4 초기화
+      if (typeof initGeetest4 === 'undefined') {
+        console.error('[GeeTest] initGeetest4 함수가 로드되지 않았습니다. 스크립트 URL을 확인하세요.');
+      } else {
+        console.log('[GeeTest] initGeetest4 함수 발견, 초기화 시작...');
+        initGeetest4({
+          captchaId: '{{ gt_id }}',
+          product: 'float'  // 팝업 형태 슬라이드 캡챠
+        }, function(captchaObj) {
+          console.log('[GeeTest] 캡챠 객체 생성 성공');
+          captchaObj.appendTo('#geetest-captcha');
+
+          // 캡챠 완료 시 hidden fields에 값 저장
+          captchaObj.onSuccess(function() {
+            var result = captchaObj.getValidate();
+            document.getElementById('lot_number').value = result.lot_number;
+            document.getElementById('captcha_output').value = result.captcha_output;
+            document.getElementById('pass_token').value = result.pass_token;
+            document.getElementById('gen_time').value = result.gen_time;
+            console.log('[GeeTest] 캡챠 완료', result);
+          });
+
+          captchaObj.onError(function(err) {
+            console.error('[GeeTest] 에러 발생:', err);
+          });
         });
-        const data = await r.json();
-        if(!data.ok){
-          alert("세션 종료: " + (data.reason||"unknown"));
-          window.location.href="/";
-          return;
-        }
-        probEl.textContent = data.problem;
-        ansEl.value = "";
-        statusEl.textContent = "통과!";
-      }catch(e){
-        statusEl.textContent = "에러: " + e;
       }
-    });
 
-    (function(){
-      window.initGeetest4({
-        captchaId: "{{ gt_id }}",
-        product: 'float',
-        riskType: 'slide'
-      }, function(obj){
-        window._gt = obj;
-        obj.appendTo('#gt');
-        obj.onSuccess(async function(){
-          const v = obj.getValidate();
-          statusEl.textContent = "검증 중...";
-          try{
-            const r = await fetch("/api/step2/verify-slide", {
-              method:"POST",
-              headers:{"Content-Type":"application/json"},
-              body: JSON.stringify(v)
-            });
-            const data = await r.json();
-            if(!data.ok){ statusEl.textContent = "실패: " + (data.reason||"unknown"); return; }
-            statusEl.textContent = "GeeTest 성공!";
-            // 성공은 poll 루프가 /success 로 보냄
-          }catch(e){ statusEl.textContent = "에러: " + e; }
+      // Enterprise v3: action='s2'
+      grecaptcha.enterprise.ready(function() {
+        grecaptcha.enterprise.execute('{{ v3_key }}', {action: 's2'}).then(function(token) {
+          document.getElementById('v3_token_s2').value = token;
+          console.log('[v3 s2] token acquired');
+        }).catch(function(e){
+          console.warn('v3 s2 token error:', e);
         });
       });
-    })();
+    </script>
 
-    document.getElementById('resetGt').addEventListener('click', ()=>{
-      if(window._gt) window._gt.reset();
-    });
-  </script>
+    <p style="margin-top:24px;">
+      제출 시 <strong>v3 토큰(#v3_token_s2.value)</strong>을 함께 포함하세요.
+    </p>
+
+    <p><a href="{{ url_for('success') }}">성공 페이지로 이동(완료 후)</a></p>
+  </div>
 </body>
 </html>
