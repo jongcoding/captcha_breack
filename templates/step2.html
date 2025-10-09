@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>Gate 2 · CAPTCHA THE FLAG</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://www.google.com/recaptcha/enterprise.js?render={{ v3_key }}"></script>
+  <script src="https://static.geetest.com/v4/gt4.js"></script>
+  <style>
+    :root { --bg:#0b1220; --card:#111a2b; --ink:#e8eefc; --line:#1e2a45; --pri:#6e7fff; }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif}
+    .wrap{max-width:720px;margin:8vh auto;padding:24px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px}
+    h2{margin:0 0 12px}
+    #geetest-captcha{margin-top:8px}
+    .meta{margin-top:12px;opacity:.8;font-size:14px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h2>Gate 2</h2>
+      <div id="geetest-captcha"></div>
+
+      <input type="hidden" id="lot_number" value="" />
+      <input type="hidden" id="captcha_output" value="" />
+      <input type="hidden" id="pass_token" value="" />
+      <input type="hidden" id="gen_time" value="" />
+      <input type="hidden" id="v3_token_s2" value="" />
+
+      <div class="meta">time limit: {{ ms }} ms</div>
+    </div>
+  </div>
+
+  <script>
+    if (typeof initGeetest4 !== 'undefined') {
+      initGeetest4({ captchaId: '{{ gt_id }}', product: 'float' }, function(captchaObj) {
+        captchaObj.appendTo('#geetest-captcha');
+        captchaObj.onSuccess(function() {
+          var r = captchaObj.getValidate();
+          document.getElementById('lot_number').value = r.lot_number;
+          document.getElementById('captcha_output').value = r.captcha_output;
+          document.getElementById('pass_token').value = r.pass_token;
+          document.getElementById('gen_time').value = r.gen_time;
+        });
+      });
+    }
+    grecaptcha.enterprise.ready(function() {
+      grecaptcha.enterprise.execute('{{ v3_key }}', {action: 's2'}).then(function(token) {
+        document.getElementById('v3_token_s2').value = token;
+      }).catch(function(){});
+    });
+  </script>
+</body>
+</html>
