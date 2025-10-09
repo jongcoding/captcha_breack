@@ -2,82 +2,55 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <title>STEP 2</title>
-  <!-- Enterprise v3 -->
+  <title>Gate 2 · CAPTCHA THE FLAG</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://www.google.com/recaptcha/enterprise.js?render={{ v3_key }}"></script>
-  <!-- GeeTest v4 -->
   <script src="https://static.geetest.com/v4/gt4.js"></script>
   <style>
-    .box { max-width: 520px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; }
-    .muted { color: #666; }
+    :root { --bg:#0b1220; --card:#111a2b; --ink:#e8eefc; --line:#1e2a45; --pri:#6e7fff; }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif}
+    .wrap{max-width:720px;margin:8vh auto;padding:24px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px}
+    h2{margin:0 0 12px}
+    #geetest-captcha{margin-top:8px}
+    .meta{margin-top:12px;opacity:.8;font-size:14px}
   </style>
 </head>
 <body>
-  <div class="box">
-    <h2>STEP 2 (GeeTest + Enterprise v3)</h2>
+  <div class="wrap">
+    <div class="card">
+      <h2>Gate 2</h2>
+      <div id="geetest-captcha"></div>
 
-    <!-- GeeTest 슬라이드 캡챠 위젯 -->
-    <div id="geetest-captcha"></div>
-    <p class="muted">위 슬라이더를 통과하세요. 자동화 클라이언트는 완료 후 hidden 인풋에서 값을 읽어
-      <code>/api/step2/verify-slide</code>로 전송합니다.</p>
+      <input type="hidden" id="lot_number" value="" />
+      <input type="hidden" id="captcha_output" value="" />
+      <input type="hidden" id="pass_token" value="" />
+      <input type="hidden" id="gen_time" value="" />
+      <input type="hidden" id="v3_token_s2" value="" />
 
-    <!-- GeeTest 결과값을 담을 hidden fields -->
-    <input type="hidden" id="lot_number" value="" />
-    <input type="hidden" id="captcha_output" value="" />
-    <input type="hidden" id="pass_token" value="" />
-    <input type="hidden" id="gen_time" value="" />
+      <div class="meta">time limit: {{ ms }} ms</div>
+    </div>
+  </div>
 
-    <!-- v3 token hidden -->
-    <input type="hidden" id="v3_token_s2" value="" />
-
-    <script>
-      // 디버깅: CAPTCHA_ID 확인
-      console.log('[GeeTest] Captcha ID:', '{{ gt_id }}');
-
-      // GeeTest v4 초기화
-      if (typeof initGeetest4 === 'undefined') {
-        console.error('[GeeTest] initGeetest4 함수가 로드되지 않았습니다. 스크립트 URL을 확인하세요.');
-      } else {
-        console.log('[GeeTest] initGeetest4 함수 발견, 초기화 시작...');
-        initGeetest4({
-          captchaId: '{{ gt_id }}',
-          product: 'float'  // 팝업 형태 슬라이드 캡챠
-        }, function(captchaObj) {
-          console.log('[GeeTest] 캡챠 객체 생성 성공');
-          captchaObj.appendTo('#geetest-captcha');
-
-          // 캡챠 완료 시 hidden fields에 값 저장
-          captchaObj.onSuccess(function() {
-            var result = captchaObj.getValidate();
-            document.getElementById('lot_number').value = result.lot_number;
-            document.getElementById('captcha_output').value = result.captcha_output;
-            document.getElementById('pass_token').value = result.pass_token;
-            document.getElementById('gen_time').value = result.gen_time;
-            console.log('[GeeTest] 캡챠 완료', result);
-          });
-
-          captchaObj.onError(function(err) {
-            console.error('[GeeTest] 에러 발생:', err);
-          });
-        });
-      }
-
-      // Enterprise v3: action='s2'
-      grecaptcha.enterprise.ready(function() {
-        grecaptcha.enterprise.execute('{{ v3_key }}', {action: 's2'}).then(function(token) {
-          document.getElementById('v3_token_s2').value = token;
-          console.log('[v3 s2] token acquired');
-        }).catch(function(e){
-          console.warn('v3 s2 token error:', e);
+  <script>
+    if (typeof initGeetest4 !== 'undefined') {
+      initGeetest4({ captchaId: '{{ gt_id }}', product: 'float' }, function(captchaObj) {
+        captchaObj.appendTo('#geetest-captcha');
+        captchaObj.onSuccess(function() {
+          var r = captchaObj.getValidate();
+          document.getElementById('lot_number').value = r.lot_number;
+          document.getElementById('captcha_output').value = r.captcha_output;
+          document.getElementById('pass_token').value = r.pass_token;
+          document.getElementById('gen_time').value = r.gen_time;
         });
       });
-    </script>
-
-    <p style="margin-top:24px;">
-      제출 시 <strong>v3 토큰(#v3_token_s2.value)</strong>을 함께 포함하세요.
-    </p>
-
-    <p><a href="{{ url_for('success') }}">성공 페이지로 이동(완료 후)</a></p>
-  </div>
+    }
+    grecaptcha.enterprise.ready(function() {
+      grecaptcha.enterprise.execute('{{ v3_key }}', {action: 's2'}).then(function(token) {
+        document.getElementById('v3_token_s2').value = token;
+      }).catch(function(){});
+    });
+  </script>
 </body>
 </html>

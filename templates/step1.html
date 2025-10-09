@@ -2,49 +2,41 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8" />
-  <title>STEP 1</title>
-  <!-- reCAPTCHA v2 체크박스용 (레거시) -->
+  <title>Gate 1 · CAPTCHA THE FLAG</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
-  <!-- reCAPTCHA Enterprise v3 토큰용 -->
   <script src="https://www.google.com/recaptcha/enterprise.js?render={{ v3_key }}"></script>
   <style>
-    .box { max-width: 520px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; }
+    :root { --bg:#0b1220; --card:#111a2b; --ink:#e8eefc; --line:#1e2a45; --pri:#6e7fff; }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,Segoe UI,Roboto,Apple SD Gothic Neo,Noto Sans KR,sans-serif}
+    .wrap{max-width:720px;margin:8vh auto;padding:24px}
+    .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:28px}
+    h2{margin:0 0 12px}
+    .row{margin-top:16px}
+    .nav{margin-top:20px;display:flex;gap:10px}
+    a.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:var(--pri);color:#fff;text-decoration:none;font-weight:600}
   </style>
 </head>
 <body>
-  <div class="box">
-    <h2>STEP 1 (v2 + Enterprise v3)</h2>
-    <p>아래 v2 체크박스를 통과한 후, 서버는 동시에 v3(Enterprise) 점수도 평가합니다.</p>
-
-    <!-- v2 -->
-    <div class="g-recaptcha" data-sitekey="{{ rc_key }}"></div>
-
-    <!-- v3 token이 자동 주입될 히든 필드 -->
-    <input type="hidden" id="v3_token_s1" value="" />
-
-    <p style="margin-top:16px;">
-      <em>v3 토큰은 페이지 로드 후 자동 발급됩니다.</em>
-    </p>
-
-    <script>
-      // Enterprise v3: action='s1'
-      grecaptcha.enterprise.ready(function() {
-        grecaptcha.enterprise.execute('{{ v3_key }}', {action: 's1'}).then(function(token) {
-          document.getElementById('v3_token_s1').value = token;
-          console.log('[v3 s1] token acquired');
-        }).catch(function(e){
-          console.warn('v3 s1 token error:', e);
-        });
-      });
-    </script>
-
-    <p style="margin-top:24px;">
-      이제 클라이언트(자동화/프록시)에서
-      <code>/api/step1/begin</code> → <code>/api/step1/verify-recaptcha</code> 로
-      <strong>v2 토큰(g-recaptcha-response) + v3 토큰(#v3_token_s1.value)</strong>을 함께 제출하세요.
-    </p>
-
-    <p><a href="{{ url_for('step2') }}">STEP 2로 이동</a></p>
+  <div class="wrap">
+    <div class="card">
+      <h2>Gate 1</h2>
+      <div class="row">
+        <div class="g-recaptcha" data-sitekey="{{ rc_key }}"></div>
+        <input type="hidden" id="v3_token_s1" value="">
+      </div>
+      <div class="nav">
+        <a class="btn" href="{{ url_for('step2') }}">Go to Gate 2</a>
+      </div>
+    </div>
   </div>
+  <script>
+    grecaptcha.enterprise.ready(function() {
+      grecaptcha.enterprise.execute('{{ v3_key }}', {action: 's1'}).then(function(token) {
+        document.getElementById('v3_token_s1').value = token;
+      }).catch(function(){});
+    });
+  </script>
 </body>
 </html>
