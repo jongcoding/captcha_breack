@@ -52,7 +52,7 @@ API_BROWSER_ALLOWLIST = {
     "/api/step2/status",
 }
 
-S1_TO_S2_MAX_MS = int(os.getenv("S1_TO_S2_MAX_MS", "60000"))
+S1_TO_S2_MAX_MS = 60000
 
 def create_app():
     app = Flask(__name__)
