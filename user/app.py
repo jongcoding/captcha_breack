@@ -18,17 +18,17 @@ RECAPTCHA_ENTERPRISE_PROJECT_ID = os.getenv("RECAPTCHA_ENTERPRISE_PROJECT_ID", "
 FLAG = os.getenv("FLAG", "MSG{FAKE_FLAG}")
 SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_hex(32))
 
-MAX_RESPONSE_TIME_MS = int(os.getenv("MAX_RESPONSE_TIME_MS", "60000"))
+MAX_RESPONSE_TIME_MS = 60000
 
-SIG_BUCKET_MS    = int(os.getenv("SIG_BUCKET_MS", "120"))
-PULSE_MAX_AGE_MS = int(os.getenv("PULSE_MAX_AGE_MS", "320"))
-POW_BITS         = int(os.getenv("POW_BITS", "18"))
-TICKET_TTL_MS    = int(os.getenv("TICKET_TTL_MS", "3000"))
-GEETEST_MAX_TIME_MS = int(os.getenv("GEETEST_MAX_TIME_MS", "60000"))
-FX_HDR_NAME      = os.getenv("FX_HDR_NAME", "X-Fx-Sig")
-BLOCK_BROWSER    = os.getenv("BLOCK_BROWSER", "1") == "1"
+SIG_BUCKET_MS    = 120
+PULSE_MAX_AGE_MS = 320
+POW_BITS         = 18
+TICKET_TTL_MS    = 3000
+GEETEST_MAX_TIME_MS = 60000
+FX_HDR_NAME      = "X-Fx-Sig"
+BLOCK_BROWSER    = True
 
-DEV_DISABLE_SIG = os.getenv("DEV_DISABLE_SIG", "0") == "1"
+DEV_DISABLE_SIG = False
 
 RECAPTCHA_V2_SITE_KEY   = os.getenv("RECAPTCHA_V2_SITE_KEY", "")
 RECAPTCHA_V2_SECRET_KEY = os.getenv("RECAPTCHA_V2_SECRET_KEY", "")
@@ -52,7 +52,7 @@ API_BROWSER_ALLOWLIST = {
     "/api/step2/status",
 }
 
-S1_TO_S2_MAX_MS = int(os.getenv("S1_TO_S2_MAX_MS", "60000"))
+S1_TO_S2_MAX_MS = 60000
 
 def create_app():
     app = Flask(__name__)
