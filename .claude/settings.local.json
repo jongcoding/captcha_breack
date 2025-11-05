@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(net stop Apache2.4)",
+      "Bash(net stop:*)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(tasklist:*)",
+      "Bash(docker stop:*)",
+      "Bash(wmic service:*)",
+      "Bash(wsl -- ps:*)",
+      "Bash(wsl service apache2 stop)",
+      "Bash(wsl sudo service apache2 stop:*)",
+      "Bash(wsl ps:*)",
+      "Bash(wsl systemctl:*)",
+      "Bash(wsl sudo systemctl stop nginx)",
+      "Bash(wsl sudo systemctl:*)",
+      "Bash(wsl sudo systemctl disable apache2)",
+      "Bash(python test_handshake.py:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}
