@@ -17,4 +17,4 @@ COPY . .
 USER appuser
 EXPOSE 5000
 ENV FLASK_APP=app:create_app
-CMD ["gunicorn", "-w", "1", "-b", "0.0.0.0:5000", "--timeout", "120", "app:create_app()"]
+CMD ["gunicorn", "-w", "1", "-k", "gevent", "--worker-connections", "1000", "-b", "0.0.0.0:5000", "--timeout", "120", "app:create_app()"]
