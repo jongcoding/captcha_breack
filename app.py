@@ -85,9 +85,14 @@ def create_app():
         return n
 
     def client_ip() -> str:
+        xri = request.headers.get("X-Real-IP", "").strip()
+        if xri:
+            return xri
         xff = request.headers.get("X-Forwarded-For", "")
         if xff:
-            return xff.split(",")[0].strip()
+            parts = [p.strip() for p in xff.split(",") if p.strip()]
+            if parts:
+                return parts[-1]
         return request.remote_addr or ""
 
     BROWSER_HDRS = (
@@ -364,7 +369,6 @@ def create_app():
     @app.post("/api/handshake/new")
     def hs_new():
         sid = session.get("sid")
-        print(f"[hs_new] sid={sid}, session_keys={list(session.keys())}, cookies={request.cookies}")
         if not sid or sid not in sessions:
             return jsonify({"ok": False, "reason": "session_expired"}), 401
         seed = secrets.token_bytes(16)
